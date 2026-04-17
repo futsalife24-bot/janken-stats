@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>じゃんけん集計ダッシュボード</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --goo:    #3B82F6;
+  --choki:  #F59E0B;
+  --paa:    #EF4444;
+  --bg:     #0f172a;
+  --card:   #1e293b;
+  --border: #334155;
+  --text:   #e2e8f0;
+  --sub:    #94a3b8;
+  --green:  #22c55e;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', 'メイリオ', Meiryo, sans-serif;
+  background: var(--bg); color: var(--text); min-height: 100vh;
+}
+
+/* ---- HEADER ---- */
+header {
+  background: var(--card); border-bottom: 1px solid var(--border);
+  padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center;
+  position: sticky; top: 0; z-index: 100;
+}
+header h1 { font-size: 1.3rem; font-weight: 700; }
+.header-right { display: flex; gap: .75rem; align-items: center; }
+.status-text { font-size: .8rem; color: var(--sub); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green);
+       display: inline-block; margin-right: 4px; animation: blink 2s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+.btn {
+  padding: .4rem 1rem; border-radius: 8px; border: 1px solid var(--border);
+  background: transparent; color: var(--sub); cursor: pointer; font-size: .8rem; transition: background .15s;
+}
+.btn:hover { background: var(--border); color: var(--text); }
+
+/* ---- LAYOUT ---- */
+main { max-width: 1280px; margin: 0 auto; padding: 1.5rem 2rem; }
+.section { margin-bottom: 2rem; }
+.section-title {
+  font-size: .75rem; font-weight: 700; color: var(--sub);
+  text-transform: uppercase; letter-spacing: .1em; margin-bottom: 1rem;
+}
+
+/* ---- STAT CARDS ---- */
+.stat-cards { display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem; margin-bottom: 1rem; }
+.stat-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+  padding: 1.25rem 1.5rem; text-align: center;
+}
+.stat-card .label { font-size: .85rem; color: var(--sub); margin-bottom: .4rem; }
+.stat-card .value { font-size: 2.4rem; font-weight: 800; }
+.stat-card .pct   { font-size: .8rem; color: var(--sub); margin-top: .2rem; }
+.card-goo   .value { color: var(--goo);   }
+.card-choki .value { color: var(--choki); }
+.card-paa   .value { color: var(--paa);   }
+
+/* ---- CHART BOXES ---- */
+.chart-row   { display: grid; grid-template-columns: 300px 1fr; gap: 1rem; }
+.chart-box   {
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+  padding: 1.25rem;
+}
+.chart-box h3 { font-size: .8rem; color: var(--sub); margin-bottom: 1rem; }
+.chart-full  { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; }
+.chart-full h3 { font-size: .8rem; color: var(--sub); margin-bottom: 1rem; }
+
+/* ---- TABS ---- */
+.tabs { display: flex; gap: .5rem; margin-bottom: 1rem; }
+.tab-btn {
+  padding: .45rem 1.2rem; border-radius: 8px; border: 1px solid var(--border);
+  background: transparent; color: var(--sub); cursor: pointer; font-size: .85rem; transition: all .15s;
+}
+.tab-btn.active { background: var(--text); color: var(--bg); border-color: var(--text); font-weight: 700; }
+
+/* ---- RECENT MINI CARDS ---- */
+.recent-cards { display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem; margin-top: 1rem; }
+.recent-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+  padding: 1rem; text-align: center;
+}
+.recent-card .label { font-size: .8rem; color: var(--sub); margin-bottom: .3rem; }
+.recent-card .value { font-size: 1.8rem; font-weight: 700; }
+.recent-card .pct   { font-size: .75rem; color: var(--sub); margin-top: .15rem; }
+
+/* ---- PREDICTION ---- */
+.pred-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.pred-algo { font-size: .75rem; color: var(--sub); margin-bottom: 1rem; }
+.prob-row { margin: .65rem 0; }
+.prob-label { display: flex; justify-content: space-between; margin-bottom: .25rem; font-size: .85rem; }
+.prob-label strong { font-weight: 700; }
+.prob-track { background: var(--border); border-radius: 4px; height: 10px; overflow: hidden; }
+.prob-fill  { height: 10px; border-radius: 4px; transition: width .6s ease; }
+.pred-result {
+  margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--border);
+  display: flex; align-items: center; gap: 1rem;
+}
+.pred-result .emoji { font-size: 3rem; }
+.pred-result .name  { font-size: 1.8rem; font-weight: 800; }
+.pred-result .sub   { font-size: .8rem; color: var(--sub); margin-top: .15rem; }
+
+.win-box {
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+  padding: 2rem; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; text-align: center;
+}
+.win-box .win-title { font-size: .8rem; color: var(--sub); margin-bottom: 1rem; }
+.win-box .win-emoji { font-size: 5rem; line-height: 1; margin-bottom: .5rem; }
+.win-box .win-name  { font-size: 2.2rem; font-weight: 800; }
+.win-box .win-reason{ font-size: .85rem; color: var(--sub); margin-top: .4rem; }
+
+.win-table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; font-size: .82rem; }
+.win-table th { color: var(--sub); padding: .4rem .6rem; text-align: right; font-weight: 600; border-bottom: 1px solid var(--border); }
+.win-table th:first-child { text-align: left; }
+.win-table td { padding: .45rem .6rem; text-align: right; border-bottom: 1px solid var(--border); }
+.win-table td:first-child { text-align: left; }
+.win-table tr.best { background: rgba(34,197,94,.08); }
+.win-pct.good  { color: var(--green); font-weight: 700; }
+.win-pct.bad   { color: var(--paa);   }
+.win-pct.mid   { color: var(--sub);   }
+
+/* ---- MISC ---- */
+.loading { text-align: center; padding: 5rem; color: var(--sub); font-size: 1.2rem; }
+.error   { background: #450a0a; border: 1px solid #dc2626; border-radius: 12px; padding: 1.5rem; }
+.error strong { color: #fca5a5; }
+.error code { display: block; margin-top: .75rem; font-family: monospace; font-size: .85rem; color: var(--sub); }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>✊✌️✋ じゃんけん集計ダッシュボード</h1>
+    <div class="status-text"><span class="dot"></span><span id="status-text">読み込み中...</span></div>
+  </div>
+  <div class="header-right">
+    <span class="status-text">自動更新 5分ごと</span>
+    <button class="btn" onclick="loadData(true)">↻ 今すぐ更新</button>
+  </div>
+</header>
+
+<main id="app"><div class="loading">📊 CSVを読み込んでいます...</div></main>
+
+<script>
+// ================================================================
+// 定数
+// ================================================================
+const CSV_PATH = 'janken_result_slim.csv';
+const REFRESH_MS = 5 * 60 * 1000;
+const HANDS  = ['グー', 'チョキ', 'パー'];
+const EMOJI  = { 'グー': '✊', 'チョキ': '✌️', 'パー': '✋' };
+const COLOR  = { 'グー': '#3B82F6', 'チョキ': '#F59E0B', 'パー': '#EF4444' };
+const CARD_CLS = { 'グー': 'card-goo', 'チョキ': 'card-choki', 'パー': 'card-paa' };
+// じゃんけんルール: キー=相手の手 → 値=勝ち手
+const BEATS = { 'グー': 'パー', 'チョキ': 'グー', 'パー': 'チョキ' };
+const BEATS_REASON = { 'グー': 'パーはグーに勝つ', 'チョキ': 'グーはチョキに勝つ', 'パー': 'チョキはパーに勝つ' };
+
+let charts = {};
+let allRows = [];
+let lastHash = '';
+
+// ================================================================
+// CSV パーサー（BOM・引用符・改行込みフィールド対応）
+// ================================================================
+function parseCSV(raw) {
+  if (raw.charCodeAt(0) === 0xFEFF) raw = raw.slice(1);
+  const lines = splitLines(raw);
+  if (lines.length < 2) return [];
+  const headers = parseLine(lines[0]);
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const t = lines[i].trim();
+    if (!t) continue;
+    const vals = parseLine(t);
+    const row = {};
+    headers.forEach((h, j) => { row[h.trim()] = (vals[j] || '').trim(); });
+    if (row.id) rows.push(row);
+  }
+  return rows;
+}
+
+function splitLines(text) {
+  const out = []; let buf = ''; let q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (c === '"') { q = !q; }
+    else if (!q && (c === '\n' || c === '\r')) {
+      if (c === '\r' && text[i+1] === '\n') i++;
+      out.push(buf); buf = '';
+    } else { buf += c; }
+  }
+  if (buf) out.push(buf);
+  return out;
+}
+
+function parseLine(line) {
+  const out = []; let buf = ''; let q = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') {
+      if (q && line[i+1] === '"') { buf += '"'; i++; }
+      else q = !q;
+    } else if (c === ',' && !q) { out.push(buf); buf = ''; }
+    else buf += c;
+  }
+  out.push(buf);
+  return out;
+}
+
+// ================================================================
+// 集計ユーティリティ
+// ================================================================
+function sumHands(rows) {
+  const r = { 'グー': 0, 'チョキ': 0, 'パー': 0 };
+  rows.forEach(row => HANDS.forEach(h => { r[h] += (parseInt(row[h]) || 0); }));
+  return r;
+}
+
+function toProbs(counts) {
+  const s = HANDS.reduce((a, h) => a + counts[h], 0);
+  if (!s) return { 'グー': 0, 'チョキ': 0, 'パー': 0 };
+  const p = {};
+  HANDS.forEach(h => { p[h] = counts[h] / s; });
+  return p;
+}
+
+function tail(rows, n) { return rows.slice(-n); }
+
+// 予測: 全体30% + 直近100本30% + 直近20本40% の重み付き合成
+function predict(rows) {
+  const p_all  = toProbs(sumHands(rows));
+  const p_100  = toProbs(sumHands(tail(rows, 100)));
+  const p_20   = toProbs(sumHands(tail(rows, 20)));
+  const combo  = {};
+  let s = 0;
+  HANDS.forEach(h => {
+    combo[h] = p_all[h]*0.3 + p_100[h]*0.3 + p_20[h]*0.4;
+    s += combo[h];
+  });
+  if (s) HANDS.forEach(h => { combo[h] /= s; });
+  const predicted = HANDS.reduce((a, b) => combo[a] >= combo[b] ? a : b);
+  return { probs: combo, predicted };
+}
+
+// ================================================================
+// Chart.js ラッパー
+// ================================================================
+function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+
+const CHART_OPTS_BASE = (axisColor = '#94a3b8', gridColor = '#334155') => ({
+  responsive: true,
+  maintainAspectRatio: true,
+  plugins: { legend: { display: false } },
+  scales: {
+    x: { grid: { color: gridColor }, ticks: { color: axisColor } },
+    y: { grid: { color: gridColor }, ticks: { color: axisColor }, beginAtZero: true }
+  }
+});
+
+function drawDonut(id, counts) {
+  destroyChart(id);
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  const total = HANDS.reduce((a, h) => a + counts[h], 0);
+  charts[id] = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: HANDS.map(h => EMOJI[h] + ' ' + h),
+      datasets: [{ data: HANDS.map(h => counts[h]),
+        backgroundColor: HANDS.map(h => COLOR[h] + 'bb'),
+        borderColor:     HANDS.map(h => COLOR[h]),
+        borderWidth: 2 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: {
+        legend: { position: 'bottom', labels: { color: '#94a3b8', padding: 14, font: { size: 13 } } },
+        tooltip: { callbacks: { label: c =>
+          ` ${c.label}: ${c.raw}回 (${(c.raw/total*100).toFixed(1)}%)` } }
+      }
+    }
+  });
+}
+
+function drawBar(id, counts, height) {
+  destroyChart(id);
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  if (height) ctx.parentElement.style.height = height + 'px';
+  charts[id] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: HANDS.map(h => EMOJI[h] + ' ' + h),
+      datasets: [{ data: HANDS.map(h => counts[h]),
+        backgroundColor: HANDS.map(h => COLOR[h] + 'bb'),
+        borderColor:     HANDS.map(h => COLOR[h]),
+        borderWidth: 2, borderRadius: 8 }]
+    },
+    options: CHART_OPTS_BASE()
+  });
+}
+
+function drawLine(id, rows) {
+  destroyChart(id);
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  const SZ = 20;
+  const buckets = [];
+  for (let i = 0; i < rows.length; i += SZ) {
+    const sl = rows.slice(i, i + SZ);
+    const c = sumHands(sl);
+    buckets.push({ label: `${i+1}〜${Math.min(i+SZ, rows.length)}本目`, counts: c });
+  }
+  charts[id] = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: buckets.map(b => b.label),
+      datasets: HANDS.map(h => ({
+        label: EMOJI[h] + ' ' + h,
+        data: buckets.map(b => b.counts[h]),
+        borderColor: COLOR[h],
+        backgroundColor: COLOR[h] + '22',
+        borderWidth: 2, tension: 0.4, fill: false, pointRadius: 2
+      }))
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: { legend: { labels: { color: '#94a3b8', boxWidth: 12, padding: 16 } } },
+      scales: {
+        x: { grid: { color: '#334155' }, ticks: { color: '#94a3b8', maxTicksLimit: 14, maxRotation: 45 } },
+        y: { grid: { color: '#334155' }, ticks: { color: '#94a3b8' }, beginAtZero: true }
+      }
+    }
+  });
+}
+
+// ================================================================
+// レンダリング
+// ================================================================
+function pct(n, total) { return total ? (n/total*100).toFixed(1) : '0.0'; }
+
+function probBarsHTML(probs) {
+  return HANDS.map(h => {
+    const p = (probs[h]*100).toFixed(1);
+    return `
+    <div class="prob-row">
+      <div class="prob-label">
+        <span>${EMOJI[h]} ${h}</span>
+        <strong style="color:${COLOR[h]}">${p}%</strong>
+      </div>
+      <div class="prob-track">
+        <div class="prob-fill" style="width:${p}%;background:${COLOR[h]}"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function winTableHTML(probs) {
+  // 勝率計算: あなたの手 vs チャンネルの手
+  // グーを出す → チョキに勝ち・パーに負け・グーにあいこ
+  const WIN_AGAINST = { 'グー': 'チョキ', 'チョキ': 'パー', 'パー': 'グー' };
+  const LOSE_AGAINST = { 'グー': 'パー', 'チョキ': 'グー', 'パー': 'チョキ' };
+  const rows = HANDS.map(mine => {
+    const win  = probs[WIN_AGAINST[mine]];
+    const lose = probs[LOSE_AGAINST[mine]];
+    const tie  = probs[mine];
+    return { mine, win, lose, tie };
+  });
+  const best = rows.reduce((a, b) => b.win > a.win ? b : a).mine;
+  return `
+  <table class="win-table">
+    <thead>
+      <tr>
+        <th>あなたの手</th>
+        <th>勝率</th>
+        <th>負率</th>
+        <th>あいこ率</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${rows.map(r => `
+      <tr class="${r.mine === best ? 'best' : ''}">
+        <td>${EMOJI[r.mine]} ${r.mine}${r.mine === best ? ' ⭐' : ''}</td>
+        <td class="win-pct good">${(r.win*100).toFixed(1)}%</td>
+        <td class="win-pct bad">${(r.lose*100).toFixed(1)}%</td>
+        <td class="win-pct mid">${(r.tie*100).toFixed(1)}%</td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+function renderApp(rows) {
+  const total  = sumHands(rows);
+  const totalN = HANDS.reduce((a, h) => a + total[h], 0);
+  const { probs, predicted } = predict(rows);
+  const winHand = BEATS[predicted];
+  const withJanken = rows.filter(r => HANDS.some(h => (parseInt(r[h])||0) > 0)).length;
+
+  document.getElementById('app').innerHTML = `
+  <!-- 累計集計 -->
+  <div class="section">
+    <div class="section-title">📊 累計集計 — 全 ${rows.length.toLocaleString()} 本
+      <span style="font-weight:400;text-transform:none;letter-spacing:0">
+        （うちじゃんけんあり ${withJanken.toLocaleString()} 本 / 総発言数 ${totalN.toLocaleString()} 回）
+      </span>
+    </div>
+    <div class="stat-cards">
+      ${HANDS.map(h => `
+      <div class="stat-card ${CARD_CLS[h]}">
+        <div class="label">${EMOJI[h]} ${h}</div>
+        <div class="value">${total[h].toLocaleString()}</div>
+        <div class="pct">${pct(total[h], totalN)}%</div>
+      </div>`).join('')}
+    </div>
+    <div class="chart-row">
+      <div class="chart-box"><h3>割合</h3><canvas id="c-donut"></canvas></div>
+      <div class="chart-box"><h3>回数比較</h3><canvas id="c-bar-total"></canvas></div>
+    </div>
+  </div>
+
+  <!-- 時系列トレンド -->
+  <div class="section">
+    <div class="section-title">📈 時系列トレンド（20本ごとの発言数）</div>
+    <div class="chart-full"><canvas id="c-line" height="100"></canvas></div>
+  </div>
+
+  <!-- 直近分析 -->
+  <div class="section">
+    <div class="section-title">🔍 直近パターン分析</div>
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchN(this,20)">直近 20本</button>
+      <button class="tab-btn" onclick="switchN(this,50)">直近 50本</button>
+      <button class="tab-btn" onclick="switchN(this,100)">直近 100本</button>
+    </div>
+    <div class="chart-full"><canvas id="c-bar-recent" height="100"></canvas></div>
+    <div class="recent-cards" id="recent-mini"></div>
+  </div>
+
+  <!-- 予測 -->
+  <div class="section">
+    <div class="section-title">🎯 次の手予測</div>
+    <div class="pred-grid">
+      <div class="chart-box">
+        <h3>予測確率</h3>
+        <div class="pred-algo">全体 30% + 直近100本 30% + 直近20本 40% の重み付き合成</div>
+        <div id="prob-bars">${probBarsHTML(probs)}</div>
+        <div class="pred-result">
+          <div class="emoji">${EMOJI[predicted]}</div>
+          <div>
+            <div style="font-size:.8rem;color:var(--sub)">最も出す可能性が高い手</div>
+            <div class="name" style="color:${COLOR[predicted]}">${predicted}</div>
+            <div class="sub">${(probs[predicted]*100).toFixed(1)}% の確率</div>
+          </div>
+        </div>
+      </div>
+      <div class="win-box">
+        <div class="win-title">あなたが出すべき手</div>
+        <div class="win-emoji">${EMOJI[winHand]}</div>
+        <div class="win-name" style="color:${COLOR[winHand]}">${winHand}</div>
+        <div class="win-reason">${BEATS_REASON[predicted]}</div>
+        ${winTableHTML(probs)}
+      </div>
+    </div>
+  </div>
+  `;
+
+  drawDonut('c-donut', total);
+  drawBar('c-bar-total', total);
+  drawLine('c-line', rows);
+  updateRecent(20);
+}
+
+function updateRecent(n) {
+  const recent = tail(allRows, n);
+  const counts = sumHands(recent);
+  const s = HANDS.reduce((a, h) => a + counts[h], 0);
+  drawBar('c-bar-recent', counts);
+  document.getElementById('recent-mini').innerHTML = HANDS.map(h => `
+    <div class="recent-card ${CARD_CLS[h]}">
+      <div class="label">${EMOJI[h]} ${h}</div>
+      <div class="value">${counts[h].toLocaleString()}</div>
+      <div class="pct">${pct(counts[h], s)}%</div>
+    </div>`).join('');
+}
+
+function switchN(btn, n) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  updateRecent(n);
+}
+
+// ================================================================
+// データロード・自動更新
+// ================================================================
+function simpleHash(s) {
+  let h = 0;
+  for (let i = 0; i < Math.min(s.length, 50000); i++) {
+    h = Math.imul(31, h) + s.charCodeAt(i) | 0;
+  }
+  return h;
+}
+
+async function loadData(force = false) {
+  try {
+    const res = await fetch(CSV_PATH + '?_=' + Date.now());
+    if (!res.ok) throw new Error(`HTTPエラー ${res.status}: ${CSV_PATH} が見つかりません`);
+    const text = await res.text();
+
+    const hash = simpleHash(text);
+    const changed = hash !== lastHash;
+
+    if (!force && !changed && allRows.length > 0) {
+      setStatus(`最終確認: ${ts()} — 変更なし`);
+      return;
+    }
+
+    lastHash = hash;
+    allRows = parseCSV(text);
+
+    if (!allRows.length) throw new Error('CSVにデータが見つかりません');
+
+    renderApp(allRows);
+    setStatus(`最終更新: ${ts()} — ${allRows.length.toLocaleString()}本${changed && allRows.length ? ' ✓ 更新あり' : ''}`);
+
+  } catch (e) {
+    setStatus('エラー: ' + e.message);
+    if (!allRows.length) {
+      document.getElementById('app').innerHTML = `
+        <div class="error">
+          <strong>⚠️ CSVの読み込みに失敗しました</strong><br><br>
+          ${e.message}<br><br>
+          <strong>解決方法:</strong> このファイルはローカルサーバー経由で開く必要があります。<br>
+          <code>C:\\janken\\start_app.bat</code> をダブルクリックして起動してください。</div>`;
+    }
+  }
+}
+
+function ts() {
+  return new Date().toLocaleString('ja-JP', { month:'2-digit', day:'2-digit',
+    hour:'2-digit', minute:'2-digit', second:'2-digit' });
+}
+function setStatus(s) { document.getElementById('status-text').textContent = s; }
+
+// ================================================================
+// 起動
+// ================================================================
+loadData();
+setInterval(() => loadData(), REFRESH_MS);
+</script>
+</body>
+</html>

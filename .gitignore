@@ -1,0 +1,39 @@
+# 音声キャッシュ（大容量）
+audio_tmp/
+
+# Python
+__pycache__/
+*.pyc
+
+# ログ
+logs/
+*.txt
+
+# フルCSV（transcriptあり・大容量）
+janken_result.csv
+
+# 処理済みIDインデックス（再構築可能）
+processed_ids.txt
+
+# 実行バッチ（ローカル専用）
+run.bat
+run_full.bat
+start_app.bat
+push_to_github.bat
+check_env.bat
+check_env.py
+check_setuptools.bat
+fix_*.bat
+install_*.bat
+setup*.bat
+setup*.py
+test_*.bat
+test_*.py
+try_*.bat
+run_out.txt
+run_err.txt
+*.mp4
+
+# その他ローカルファイル
+*.7z
+*.ini
