@@ -1,6 +1,6 @@
 {
-  "name": "じゃんけん集計ダッシュボード",
-  "short_name": "じゃんけん",
+  "name": "🦁学長ジャンケン予想で",
+  "short_name": "学長ジャンケン",
   "description": "リベ大チャンネルのじゃんけん発言を集計・分析するダッシュボード",
   "start_url": "./app.html",
   "display": "standalone",
