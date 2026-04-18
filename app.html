@@ -3,7 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>じゃんけん集計ダッシュボード</title>
+<title>🦁学長ジャンケン予想で</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1e293b">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="学長ジャンケン">
+<link rel="apple-touch-icon" href="icon-192.png">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 :root {
@@ -18,9 +25,11 @@
   --green:  #22c55e;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
+html { overflow-x: hidden; }
 body {
   font-family: 'Segoe UI', 'メイリオ', Meiryo, sans-serif;
   background: var(--bg); color: var(--text); min-height: 100vh;
+  overflow-x: hidden;
 }
 
 /* ---- HEADER ---- */
@@ -42,11 +51,12 @@ header h1 { font-size: 1.3rem; font-weight: 700; }
 .btn:hover { background: var(--border); color: var(--text); }
 
 /* ---- LAYOUT ---- */
-main { max-width: 1280px; margin: 0 auto; padding: 1.5rem 2rem; }
+main { max-width: 1280px; margin: 0 auto; padding: 1.5rem 2rem; width: 100%; }
 .section { margin-bottom: 2rem; }
 .section-title {
   font-size: .75rem; font-weight: 700; color: var(--sub);
   text-transform: uppercase; letter-spacing: .1em; margin-bottom: 1rem;
+  overflow-wrap: break-word; word-break: break-word;
 }
 
 /* ---- STAT CARDS ---- */
@@ -64,9 +74,10 @@ main { max-width: 1280px; margin: 0 auto; padding: 1.5rem 2rem; }
 
 /* ---- CHART BOXES ---- */
 .chart-row   { display: grid; grid-template-columns: 300px 1fr; gap: 1rem; }
+.chart-row > * { min-width: 0; }
 .chart-box   {
   background: var(--card); border: 1px solid var(--border); border-radius: 12px;
-  padding: 1.25rem;
+  padding: 1.25rem; min-width: 0;
 }
 .chart-box h3 { font-size: .8rem; color: var(--sub); margin-bottom: 1rem; }
 .chart-full  { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; }
@@ -92,6 +103,7 @@ main { max-width: 1280px; margin: 0 auto; padding: 1.5rem 2rem; }
 
 /* ---- PREDICTION ---- */
 .pred-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.pred-grid > * { min-width: 0; }
 .pred-algo { font-size: .75rem; color: var(--sub); margin-bottom: 1rem; }
 .prob-row { margin: .65rem 0; }
 .prob-label { display: flex; justify-content: space-between; margin-bottom: .25rem; font-size: .85rem; }
@@ -116,7 +128,8 @@ main { max-width: 1280px; margin: 0 auto; padding: 1.5rem 2rem; }
 .win-box .win-name  { font-size: 2.2rem; font-weight: 800; }
 .win-box .win-reason{ font-size: .85rem; color: var(--sub); margin-top: .4rem; }
 
-.win-table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; font-size: .82rem; }
+.win-table-wrap { overflow-x: auto; width: 100%; }
+.win-table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; font-size: .82rem; min-width: 260px; }
 .win-table th { color: var(--sub); padding: .4rem .6rem; text-align: right; font-weight: 600; border-bottom: 1px solid var(--border); }
 .win-table th:first-child { text-align: left; }
 .win-table td { padding: .45rem .6rem; text-align: right; border-bottom: 1px solid var(--border); }
@@ -131,14 +144,41 @@ main { max-width: 1280px; margin: 0 auto; padding: 1.5rem 2rem; }
 .error   { background: #450a0a; border: 1px solid #dc2626; border-radius: 12px; padding: 1.5rem; }
 .error strong { color: #fca5a5; }
 .error code { display: block; margin-top: .75rem; font-family: monospace; font-size: .85rem; color: var(--sub); }
+
+/* ---- MOBILE ---- */
+@media (max-width: 640px) {
+  header { padding: .75rem 1rem; flex-wrap: wrap; gap: .4rem; }
+  header h1 { font-size: 1.05rem; }
+  .header-right { width: 100%; justify-content: space-between; }
+  main { padding: .75rem; }
+  .stat-cards { gap: .4rem; }
+  .stat-card { padding: .6rem .4rem; border-radius: 8px; }
+  .stat-card .value { font-size: 1.6rem; }
+  .stat-card .label { font-size: .75rem; }
+  .chart-row { grid-template-columns: 1fr; }
+  .pred-grid { grid-template-columns: 1fr; }
+  .recent-cards { gap: .4rem; }
+  .recent-card { padding: .6rem .4rem; border-radius: 8px; }
+  .recent-card .value { font-size: 1.4rem; }
+  .win-box { padding: 1rem .75rem; }
+  .win-box .win-emoji { font-size: 3.5rem; }
+  .win-box .win-name  { font-size: 1.7rem; }
+  .tabs { flex-wrap: wrap; }
+  .section { margin-bottom: 1.25rem; }
+  .chart-box { padding: 1rem .75rem; }
+  .chart-full { padding: 1rem .75rem; }
+}
 </style>
 </head>
 <body>
 
 <header>
   <div>
-    <h1>✊✌️✋ じゃんけん集計ダッシュボード</h1>
-    <div class="status-text"><span class="dot"></span><span id="status-text">読み込み中...</span></div>
+    <h1>🦁学長ジャンケン予想で</h1>
+    <div class="status-text">
+      <span id="data-date-text" style="margin-right:.75rem"></span>
+      <span class="dot"></span><span id="status-text">読み込み中...</span>
+    </div>
   </div>
   <div class="header-right">
     <span class="status-text">自動更新 5分ごと</span>
@@ -375,7 +415,7 @@ function winTableHTML(probs) {
   });
   const best = rows.reduce((a, b) => b.win > a.win ? b : a).mine;
   return `
-  <table class="win-table">
+  <div class="win-table-wrap"><table class="win-table">
     <thead>
       <tr>
         <th>あなたの手</th>
@@ -393,7 +433,7 @@ function winTableHTML(probs) {
         <td class="win-pct mid">${(r.tie*100).toFixed(1)}%</td>
       </tr>`).join('')}
     </tbody>
-  </table>`;
+  </table></div>`;
 }
 
 function renderApp(rows) {
@@ -549,10 +589,32 @@ function ts() {
 function setStatus(s) { document.getElementById('status-text').textContent = s; }
 
 // ================================================================
+// データ最終更新日（GitHub API からCSVの最終コミット日を取得）
+// ================================================================
+async function fetchDataDate() {
+  try {
+    const res = await fetch(
+      'https://api.github.com/repos/futsalife24-bot/janken-stats/commits?path=janken_result_slim.csv&per_page=1'
+    );
+    if (!res.ok) return;
+    const [commit] = await res.json();
+    if (!commit) return;
+    const d = new Date(commit.commit.committer.date);
+    const label = d.toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    document.getElementById('data-date-text').textContent = 'データ更新: ' + label;
+  } catch {}
+}
+
+// ================================================================
 // 起動
 // ================================================================
 loadData();
+fetchDataDate();
 setInterval(() => loadData(), REFRESH_MS);
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
 </script>
 </body>
 </html>
