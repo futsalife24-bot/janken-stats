@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>じゃんけん集計ダッシュボード</title>
+<title>学長ライブ じゃんけん集計ダッシュボード</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 :root {
@@ -137,7 +137,7 @@ main { max-width: 1280px; margin: 0 auto; padding: 1.5rem 2rem; }
 
 <header>
   <div>
-    <h1>✊✌️✋ じゃんけん集計ダッシュボード</h1>
+    <h1>✊✌️✋ 学長ライブ じゃんけん集計ダッシュボード</h1>
     <div class="status-text"><span class="dot"></span><span id="status-text">読み込み中...</span></div>
   </div>
   <div class="header-right">
@@ -524,7 +524,16 @@ async function loadData(force = false) {
     lastHash = hash;
     allRows = parseCSV(text);
 
-    if (!allRows.length) throw new Error('CSVにデータが見つかりません');
+    if (!allRows.length) {
+      document.getElementById('app').innerHTML = `
+        <div style="text-align:center;padding:5rem;color:var(--sub)">
+          <div style="font-size:4rem;margin-bottom:1rem">✊✌️✋</div>
+          <div style="font-size:1.4rem;font-weight:700;color:var(--text);margin-bottom:.5rem">調査開始待ち</div>
+          <div style="font-size:.95rem">学長ライブのじゃんけんデータが集計されるとここに表示されます。</div>
+        </div>`;
+      setStatus(`最終確認: ${ts()} — データなし（調査開始待ち）`);
+      return;
+    }
 
     renderApp(allRows);
     setStatus(`最終更新: ${ts()} — ${allRows.length.toLocaleString()}本${changed && allRows.length ? ' ✓ 更新あり' : ''}`);
@@ -536,8 +545,7 @@ async function loadData(force = false) {
         <div class="error">
           <strong>⚠️ CSVの読み込みに失敗しました</strong><br><br>
           ${e.message}<br><br>
-          <strong>解決方法:</strong> このファイルはローカルサーバー経由で開く必要があります。<br>
-          <code>C:\\janken\\start_app.bat</code> をダブルクリックして起動してください。</div>`;
+          <strong>解決方法:</strong> このファイルはローカルサーバー経由で開く必要があります。</div>`;
     }
   }
 }
